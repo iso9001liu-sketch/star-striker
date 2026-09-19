@@ -98,7 +98,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
   <div class="subtitle">STAR STRIKER · 打飞机小游戏</div>
   <div class="best" id="menuBest">最高分 0</div>
   <div class="hint">
-    <span class="hintDesktop">移动鼠标控制战机，自动开火 · <span class="kbd">Shift</span>/<span class="kbd">B</span> 放炸弹 · <span class="kbd">Esc</span> 暂停</span>
+    <span class="hintDesktop">移动鼠标控制战机，自动开火 · <span class="kbd">空格</span>/<span class="kbd">B</span>/<span class="kbd">Shift</span> 放炸弹 · <span class="kbd">Esc</span> 暂停</span>
     <span class="hintMobile">拖动手指控制战机，自动开火 · 点右下角按钮放炸弹</span>
   </div>
   <button class="btn" id="startBtn">开始游戏</button>
@@ -1058,7 +1058,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
     const c=ev.code;
     if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(c)) ev.preventDefault();
     keys.add(c);
-    if((c==='ShiftLeft'||c==='ShiftRight'||c==='KeyB')&&state==='playing') useBomb();
+    if((c==='Space'||c==='KeyB'||c==='ShiftLeft'||c==='ShiftRight')&&state==='playing'){ ev.preventDefault(); useBomb(); }
     if(c==='Escape'||c==='KeyP'){
       if(state==='playing') pauseGame();
       else if(state==='paused') resumeGame();
