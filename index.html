@@ -27,7 +27,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
 #muteBtn:focus-visible{outline:2px solid #4de8ff;outline-offset:2px}
 .statRow{display:flex;align-items:center;gap:3px;min-height:22px}
 .statRow svg{flex:none}
-.statRow .xMore{font-size:12px;font-weight:800;color:#7fd8ff;opacity:.95;letter-spacing:0;padding-left:2px}
+.statRow .xMore{font-size:14px;font-weight:800;color:#7fd8ff;opacity:.95;letter-spacing:0;padding-left:3px}
 .statRow .xMoreBomb{color:#ff8fb0}
 
 #bombBtn{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));width:clamp(56px,15vw,68px);height:clamp(56px,15vw,68px);border-radius:50%;background:rgba(255,77,141,.15);border:1.5px solid rgba(255,107,138,.7);color:#ff8fb0;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:10;-webkit-tap-highlight-color:transparent;pointer-events:auto}
@@ -138,8 +138,10 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
 
   // ==================== 配置 ====================
   const CFG={fireInterval:0.15,bombMax:3,comboWindow:2.2};
-  // 火力无上限：按等级动态生成弹道，每级都更强（主炮每2级+1条，侧翼每级每侧+1条）
+  // 火力无上限：按等级动态生成弹道，每级都更强（主炮每2级+1条，侧翼每级每侧+1条）；弹道数量 8 级封顶
   function weaponShots(w){
+    // 弹道数量 8 级封顶：8 级之后不再增加弹道，只按真实等级提升单发伤害
+    w=Math.min(w,8);
     const shots=[];
     const mains=1+Math.floor((w-1)/2);
     for(let i=0;i<mains;i++) shots.push({dx:(i-(mains-1)/2)*10,dy:-26,vx:0});
@@ -963,16 +965,9 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
   // ==================== 界面 ====================
   function updateIcons(){
     if(!player) return;
-    let s='';
-    const livesShown=Math.min(player.lives,5);
-    for(let i=0;i<livesShown;i++) s+=ICON_SHIP;
-    if(player.lives>5) s+='<span class="xMore">x'+player.lives+'</span>';
-    livesRow.innerHTML=s;
-    s='';
-    const bombsShown=Math.min(player.bombs,3);
-    for(let i=0;i<bombsShown;i++) s+=ICON_BOMB;
-    if(player.bombs>3) s+='<span class="xMore xMoreBomb">x'+player.bombs+'</span>';
-    bombsRow.innerHTML=s;
+    // 生命/炸弹统一为「单个图标 + xN」形式，避免图标堆叠
+    livesRow.innerHTML=ICON_SHIP+'<span class="xMore">x'+player.lives+'</span>';
+    bombsRow.innerHTML=ICON_BOMB+'<span class="xMore xMoreBomb">x'+player.bombs+'</span>';
     bombBtn.querySelector('.cnt').textContent=player.bombs;
     bombBtn.classList.toggle('empty',player.bombs<=0);
   }
