@@ -345,7 +345,8 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
       parts.push({kind:'spark',x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:rand(0.25,0.7),max:0.7,size:rand(2,3.5)+size*0.12,color});
     }
     parts.push({kind:'ring',x,y,maxR:size*3.2,life:0.32,max:0.32,color});
-    shake(Math.min(18,size*0.7));
+    // 击落震动手感：轻幅度、短时长，避免频繁爆炸导致画面持续剧烈晃动
+    shake(Math.min(7,size*0.22));
   }
   function spawnSpark(x,y,color,n){
     for(let i=0;i<n;i++){
@@ -356,7 +357,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
   function shake(m){
     if(RM) return;
     shakeMag=Math.max(shakeMag,m);
-    shakeT=0.35;
+    shakeT=0.2;
   }
 
   // ==================== 游戏流程 ====================
@@ -705,7 +706,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
     ctx.save();
     ctx.scale(S,S);
     if(shakeT>0&&!RM){
-      const m=shakeMag*(shakeT/0.35);
+      const m=shakeMag*(shakeT/0.2);
       ctx.translate(rand(-m,m),rand(-m,m));
     }
     drawPowerups();
