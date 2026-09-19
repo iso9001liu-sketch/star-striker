@@ -28,6 +28,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
 .statRow{display:flex;align-items:center;gap:3px;min-height:22px}
 .statRow svg{flex:none}
 .statRow .xMore{font-size:12px;font-weight:800;color:#7fd8ff;opacity:.95;letter-spacing:0;padding-left:2px}
+.statRow .xMoreBomb{color:#ff8fb0}
 
 #bombBtn{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));width:clamp(56px,15vw,68px);height:clamp(56px,15vw,68px);border-radius:50%;background:rgba(255,77,141,.15);border:1.5px solid rgba(255,107,138,.7);color:#ff8fb0;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:10;-webkit-tap-highlight-color:transparent;pointer-events:auto}
 #bombBtn .cnt{font-size:15px;font-weight:800;line-height:1;margin-top:3px}
@@ -419,8 +420,8 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
       player.shield++;
       texts.push({x:u.x,y:u.y-14,str:'护盾 +1 · '+player.shield+'层',color:'#7fff9e',life:0.9,max:0.9,size:16,vy:-55});
     } else if(u.type==='bomb'){
-      player.bombs=Math.min(CFG.bombMax,player.bombs+1);
-      texts.push({x:u.x,y:u.y-14,str:'炸弹 +1',color:'#ff6b8a',life:0.9,max:0.9,size:16,vy:-55});
+      player.bombs++;
+      texts.push({x:u.x,y:u.y-14,str:'炸弹 +1 · '+player.bombs,color:'#ff6b8a',life:0.9,max:0.9,size:16,vy:-55});
     } else if(u.type==='life'){
       player.lives++;
       texts.push({x:u.x,y:u.y-14,str:'生命 +1 · '+player.lives,color:'#ff8fb0',life:0.9,max:0.9,size:16,vy:-55});
@@ -968,7 +969,9 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
     if(player.lives>5) s+='<span class="xMore">x'+player.lives+'</span>';
     livesRow.innerHTML=s;
     s='';
-    for(let i=0;i<CFG.bombMax;i++) s+=i<player.bombs?ICON_BOMB:ICON_BOMB_DIM;
+    const bombsShown=Math.min(player.bombs,3);
+    for(let i=0;i<bombsShown;i++) s+=ICON_BOMB;
+    if(player.bombs>3) s+='<span class="xMore xMoreBomb">x'+player.bombs+'</span>';
     bombsRow.innerHTML=s;
     bombBtn.querySelector('.cnt').textContent=player.bombs;
     bombBtn.classList.toggle('empty',player.bombs<=0);
