@@ -138,7 +138,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
 
   // ==================== 配置 ====================
   const CFG={fireInterval:0.15,bombMax:3,comboWindow:2.2};
-  // 火力无上限：按等级动态生成弹道，每级都更强（主炮每2级+1条，侧翼每级每侧+1条）；弹道数量 8 级封顶
+  // 火力无上限：按等级动态生成弹道，每级都更强（主炮每2级+1条，侧翼每级每侧+1条）
   function weaponShots(w){
     // 弹道数量 8 级封顶：8 级之后不再增加弹道，只按真实等级提升单发伤害
     w=Math.min(w,8);
@@ -285,8 +285,11 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
   }
   function spawnEnemy(type,x,y){
     const T=ETYPES[type];
-    const hp=T.hp+(type==='tank'?(level-1)*2:(type==='fighter'?(level-1):0));
-    enemies.push({type,x,y,x0:x,t:0,hp,r:T.r,ang:0,hitT:0,fireT:rand(0.8,2.6)});
+    // 敌人随关卡变强：所有类型血量按关卡成长，速度也随关卡提升（对抗玩家无限火力）
+    const lv=level;
+    const hp=Math.round((T.hp+(type==='tank'?(lv-1)*2:(type==='fighter'?(lv-1):0)))*(1+(lv-1)*0.25));
+    const spd=T.spd*(1+(lv-1)*0.07);
+    enemies.push({type,x,y,x0:x,t:0,hp,r:T.r,ang:0,hitT:0,fireT:rand(0.8,2.6),spd});
   }
   function spawnGroup(){
     const r=Math.random();
@@ -325,7 +328,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
     powerups.push({type,x,x0:x,y,t:0,life:12});
   }
   function fireEnemy(x,y,aim,spread){
-    const sp=170+level*16;
+    const sp=180+level*20;
     let vx,vy;
     if(aim){
       const a=Math.atan2(player.y-y,player.x-x)+spread;
@@ -538,14 +541,14 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
       const e=enemies[i], T=ETYPES[e.type];
       e.t+=dt;
       if(e.hitT>0) e.hitT-=dt;
-      if(e.type==='drone'){ e.y+=T.spd*dt; e.x=e.x0+Math.sin(e.t*1.8)*26; }
-      else if(e.type==='fighter'){ e.y+=T.spd*dt; e.x=e.x0+Math.sin(e.t*1.1)*64; }
-      else if(e.type==='tank'){ e.y+=T.spd*dt; e.x=e.x0+Math.sin(e.t*0.7)*40; }
+      if(e.type==='drone'){ e.y+=e.spd*dt; e.x=e.x0+Math.sin(e.t*1.8)*26; }
+      else if(e.type==='fighter'){ e.y+=e.spd*dt; e.x=e.x0+Math.sin(e.t*1.1)*64; }
+      else if(e.type==='tank'){ e.y+=e.spd*dt; e.x=e.x0+Math.sin(e.t*0.7)*40; }
       else if(e.type==='kamikaze'){
-        if(e.t<0.7){ e.y+=T.spd*dt; }
+        if(e.t<0.7){ e.y+=e.spd*dt; }
         else{
           const ang=Math.atan2(player.y-e.y,player.x-e.x);
-          const sp=T.spd*(1+level*0.12);
+          const sp=e.spd*(1+level*0.12);
           e.x+=Math.cos(ang)*sp*dt; e.y+=Math.sin(ang)*sp*dt;
           e.ang=ang;
         }
@@ -577,11 +580,13 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
     if(b.hitT>0) b.hitT-=dt;
     if(b.state==='enter'){
       b.y+=90*dt;
-      if(b.y>=120){ b.y=120; b.state='fight'; showBanner('BOSS 来袭'); }
+      if(b.y>=120){ b.y=120; b.state='fight'; b.swing=0; showBanner('BOSS 来袭'); }
       return;
     }
+    // 用独立摆动相位（战斗开始才累计），避免入场期间累计的相位在开战瞬间产生横向跳变（瞬移）
+    b.swing+=dt;
     const range=Math.min(GW*0.30,280);
-    b.x=clamp(GW/2+Math.sin(b.t*0.75)*range,90,GW-90);
+    b.x=clamp(GW/2+Math.sin(b.swing*0.75)*range,90,GW-90);
     b.fireT-=dt;
     const enraged=b.hp<b.maxHP*0.5;
     const itv=enraged?0.9:1.7;
