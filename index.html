@@ -27,6 +27,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
 #muteBtn:focus-visible{outline:2px solid #4de8ff;outline-offset:2px}
 .statRow{display:flex;align-items:center;gap:3px;min-height:22px}
 .statRow svg{flex:none}
+.statRow .xMore{font-size:12px;font-weight:800;color:#7fd8ff;opacity:.95;letter-spacing:0;padding-left:2px}
 
 #bombBtn{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));width:clamp(56px,15vw,68px);height:clamp(56px,15vw,68px);border-radius:50%;background:rgba(255,77,141,.15);border:1.5px solid rgba(255,107,138,.7);color:#ff8fb0;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:10;-webkit-tap-highlight-color:transparent;pointer-events:auto}
 #bombBtn .cnt{font-size:15px;font-weight:800;line-height:1;margin-top:3px}
@@ -136,12 +137,20 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
 
   // ==================== 配置 ====================
   const CFG={fireInterval:0.15,bombMax:3,comboWindow:2.2};
-  const WEP={
-    1:[{dx:0,dy:-24,vx:0}],
-    2:[{dx:-8,dy:-23,vx:0},{dx:8,dy:-23,vx:0}],
-    3:[{dx:0,dy:-25,vx:0},{dx:-9,dy:-22,vx:-70},{dx:9,dy:-22,vx:70}],
-    4:[{dx:0,dy:-26,vx:0},{dx:-12,dy:-24,vx:-150},{dx:12,dy:-24,vx:150},{dx:-8,dy:-21,vx:-55},{dx:8,dy:-21,vx:55}]
-  };
+  // 火力无上限：按等级动态生成弹道，每级都更强（主炮每2级+1条，侧翼每级每侧+1条）
+  function weaponShots(w){
+    const shots=[];
+    const mains=1+Math.floor((w-1)/2);
+    for(let i=0;i<mains;i++) shots.push({dx:(i-(mains-1)/2)*10,dy:-26,vx:0});
+    const side=Math.max(0,w-1);
+    for(let i=0;i<side;i++){
+      const ang=Math.min(0.12+0.035*i,0.36);
+      const vx=Math.round(Math.tan(ang)*780);
+      shots.push({dx:-(6+4*i),dy:-23,vx:-vx});
+      shots.push({dx:6+4*i,dy:-23,vx:vx});
+    }
+    return shots;
+  }
   const ETYPES={
     drone:{hp:1,r:14,score:100,spd:110,color:'#ff6b8a'},
     fighter:{hp:3,r:17,score:300,spd:78,color:'#ff9d5c'},
@@ -269,7 +278,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
 
   // ==================== 实体 ====================
   function makePlayer(){
-    return {x:GW/2,y:GH-150,r:15,lives:3,bombs:1,weapon:1,fireT:0,inv:0,shield:false,speed:520,trailT:0};
+    return {x:GW/2,y:GH-150,r:15,lives:3,bombs:1,weapon:1,fireT:0,inv:0,shield:0,speed:520,trailT:0};
   }
   function spawnEnemy(type,x,y){
     const T=ETYPES[type];
@@ -372,7 +381,7 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
     AUD.boom();
     spawnPowerup(boss.x-40,boss.y+30);
     spawnPowerup(boss.x+40,boss.y+30);
-    player.lives=Math.min(5,player.lives+1);
+    player.lives++;
     boss=null; bossActive=false;
     levelUp();
     updateIcons();
@@ -386,8 +395,8 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
   }
   function hurtPlayer(){
     if(player.inv>0) return;
-    if(player.shield){
-      player.shield=false; player.inv=2.6;
+    if(player.shield>0){
+      player.shield--; player.inv=2.6;
       parts.push({kind:'ring',x:player.x,y:player.y,maxR:60,life:0.35,max:0.35,color:'#7fff9e'});
       AUD.hit();
       updateIcons();
@@ -404,17 +413,17 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
   function pickup(u){
     AUD.power();
     if(u.type==='weapon'){
-      player.weapon=Math.min(4,player.weapon+1);
-      texts.push({x:u.x,y:u.y-14,str:'火力升级',color:'#4de8ff',life:0.9,max:0.9,size:16,vy:-55});
+      player.weapon++;
+      texts.push({x:u.x,y:u.y-14,str:'火力升级 · LV'+player.weapon,color:'#4de8ff',life:0.9,max:0.9,size:16,vy:-55});
     } else if(u.type==='shield'){
-      player.shield=true;
-      texts.push({x:u.x,y:u.y-14,str:'护盾',color:'#7fff9e',life:0.9,max:0.9,size:16,vy:-55});
+      player.shield++;
+      texts.push({x:u.x,y:u.y-14,str:'护盾 +1 · '+player.shield+'层',color:'#7fff9e',life:0.9,max:0.9,size:16,vy:-55});
     } else if(u.type==='bomb'){
       player.bombs=Math.min(CFG.bombMax,player.bombs+1);
       texts.push({x:u.x,y:u.y-14,str:'炸弹 +1',color:'#ff6b8a',life:0.9,max:0.9,size:16,vy:-55});
     } else if(u.type==='life'){
-      player.lives=Math.min(5,player.lives+1);
-      texts.push({x:u.x,y:u.y-14,str:'生命 +1',color:'#ff8fb0',life:0.9,max:0.9,size:16,vy:-55});
+      player.lives++;
+      texts.push({x:u.x,y:u.y-14,str:'生命 +1 · '+player.lives,color:'#ff8fb0',life:0.9,max:0.9,size:16,vy:-55});
     } else {
       score+=500;
       texts.push({x:u.x,y:u.y-14,str:'+500',color:'#ffd24d',life:0.9,max:0.9,size:16,vy:-55});
@@ -474,8 +483,9 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
     p.fireT-=dt;
     if(p.fireT<=0){
       p.fireT=CFG.fireInterval;
-      const shots=WEP[p.weapon]||WEP[1];
-      for(const s of shots) bullets.push({x:p.x+s.dx,y:p.y+s.dy,vx:s.vx,vy:-780,r:4,dmg:1,t:0});
+      const shots=weaponShots(p.weapon);
+      const dmg=1+Math.floor((p.weapon-1)/8);
+      for(const s of shots) bullets.push({x:p.x+s.dx,y:p.y+s.dy,vx:s.vx,vy:-780,r:4,dmg:dmg,t:0});
       AUD.shoot();
     }
     flash=Math.max(0,flash-dt*2.4);
@@ -743,13 +753,21 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
     ctx.fillStyle='rgba(13,48,94,0.95)';
     ctx.beginPath(); ctx.arc(0,-9,3,0,TAU); ctx.fill();
     ctx.restore();
-    if(p.shield){
+    if(p.shield>0){
       ctx.save();
       ctx.translate(p.x,p.y);
-      ctx.strokeStyle='rgba(127,255,158,0.85)'; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.arc(0,0,26,0,TAU); ctx.stroke();
-      ctx.strokeStyle='rgba(127,255,158,0.28)'; ctx.lineWidth=5;
-      ctx.beginPath(); ctx.arc(0,0,26,0,TAU); ctx.stroke();
+      const layers=Math.min(p.shield,6);
+      for(let i=0;i<layers;i++){
+        const r=26+i*3;
+        ctx.strokeStyle='rgba(127,255,158,'+(0.9-i*0.12)+')'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.stroke();
+        if(i===0){ ctx.strokeStyle='rgba(127,255,158,0.28)'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.stroke(); }
+      }
+      if(p.shield>6){
+        ctx.fillStyle='rgba(210,255,225,0.95)'; ctx.font='bold 12px system-ui,sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('x'+p.shield,0,-48);
+      }
       ctx.restore();
     }
   }
@@ -945,7 +963,9 @@ body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple
   function updateIcons(){
     if(!player) return;
     let s='';
-    for(let i=0;i<5;i++) s+=i<player.lives?ICON_SHIP:ICON_SHIP_DIM;
+    const livesShown=Math.min(player.lives,5);
+    for(let i=0;i<livesShown;i++) s+=ICON_SHIP;
+    if(player.lives>5) s+='<span class="xMore">x'+player.lives+'</span>';
     livesRow.innerHTML=s;
     s='';
     for(let i=0;i<CFG.bombMax;i++) s+=i<player.bombs?ICON_BOMB:ICON_BOMB_DIM;
